@@ -30,6 +30,9 @@
 
    ```
    git clone https://github.com/HengyiWang/spann3r.git
+   ```
+
+   ```
    cd spann3r
    ```
    
@@ -37,19 +40,144 @@
 
    ```
    conda create -n spann3r python=3.9 cmake=3.14.0
-   conda install pytorch==2.3.0 torchvision==0.18.0 torchaudio==2.3.0 pytorch-cuda=11.8 -c pytorch -c nvidia  # use the correct version of cuda for your system
-   
+   ```
+
+   Now, activate the conda environment:
+   ```
+   conda activate spann3r
+   ```
+
+   and install more things:
+
+   ```
+   conda install pytorch==2.3.0 torchvision==0.18.0 torchaudio==2.3.0 pytorch-cuda=11.8 nvcc-cuda=11.8 ninja -c pytorch -c nvidia -c conda-forge  # use the correct version of cuda for your system
+   ```
+
+   ```
    pip install -r requirements.txt
+   ```
    
-   # Open3D has a bug from 0.16.0, please use dev version
-   pip install -U -f https://www.open3d.org/docs/latest/getting_started.html open3d
+   Open3D has a bug from 0.16.0, so we install the dev version:
+
+   ```
+   pip install -U -f https://www.open3d.org/docs/latest/getting_started.html --only-binary open3d open3d
    ```
 
 3. Compile cuda kernels for RoPE
 
+   Now, lets set the CUDA_HOME environment variable with:
+
+   ```
+   set CUDA_HOME=%CONDA_PREFIX%
+   ```
+
+   and also add clang to our path (using these instructions to find the clang path if it exists: https://stackoverflow.com/a/78316182) and then adding that to the PATH
+
+   ```
+   set PATH=%PATH%;<clang-path>
+   ```
+
+   Now we change the directory to run `croco/models/curope/setup.py` from it's containing directory (which is important for finding `croco/models/curope/curope.cpp`):
+
    ```
    cd croco/models/curope/
+   ```
+
+   And this is where all our troubles begin:
+
+   ```
    python setup.py build_ext --inplace
+   ```
+
+   We currently run into the error:
+
+   ```
+   (spann3r) c:\Users\me\Documents\spann3r\croco\models\curope>python setup.py build_ext --inplace
+   options (after parsing config files):
+   no commands known yet
+   options (after parsing command line):
+   option dict for 'aliases' command:
+   {}
+   option dict for 'build_ext' command:
+   {'inplace': ('command line', 1)}
+   running build_ext
+   building 'curope' extension
+   creating c:\Users\me\Documents\spann3r\croco\models\curope\build\temp.win-amd64-cpython-39\Release
+   Emitting ninja build file c:\Users\me\Documents\spann3r\croco\models\curope\build\temp.win-amd64-cpython-39\Release\build.ninja...
+   Compiling objects...
+   Allowing ninja to set a default number of workers... (overridable by setting the environment variable MAX_JOBS=N)
+   [1/2] C:\Users\me\.conda\envs\spann3r\bin\nvcc --generate-dependencies-with-compile --dependency-output c:\Users\me\Documents\spann3r\croco\models\curope\build\temp.win-amd64-cpython-39\Release\kernels.obj.d -std=c++17 --use-local-env -Xcompiler /MD -Xcompiler /wd4819 -Xcompiler /wd4251 -Xcompiler /wd4244 -Xcompiler /wd4267 -Xcompiler /wd4275 -Xcompiler /wd4018 -Xcompiler /wd4190 -Xcompiler /wd4624 -Xcompiler /wd4067 -Xcompiler /wd4068 -Xcompiler /EHsc -Xcudafe --diag_suppress=base_class_has_different_dll_interface -Xcudafe --diag_suppress=field_without_dll_interface -Xcudafe --diag_suppress=dll_interface_conflict_none_assumed -Xcudafe --diag_suppress=dll_interface_conflict_dllexport_assumed -IC:\Users\me\.conda\envs\spann3r\lib\site-packages\torch\include -IC:\Users\me\.conda\envs\spann3r\lib\site-packages\torch\include\torch\csrc\api\include -IC:\Users\me\.conda\envs\spann3r\lib\site-packages\torch\include\TH -IC:\Users\me\.conda\envs\spann3r\lib\site-packages\torch\include\THC -IC:\Users\me\.conda\envs\spann3r\include -IC:\Users\me\.conda\envs\spann3r\include -IC:\Users\me\.conda\envs\spann3r\Include "-IC:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.36.32532\include" "-IC:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.36.32532\ATLMFC\include" "-IC:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\VS\include" "-IC:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt" "-IC:\Program Files (x86)\Windows Kits\10\\include\10.0.22000.0\\um" "-IC:\Program Files (x86)\Windows Kits\10\\include\10.0.22000.0\\shared" "-IC:\Program Files (x86)\Windows Kits\10\\include\10.0.22000.0\\winrt" "-IC:\Program Files (x86)\Windows Kits\10\\include\10.0.22000.0\\cppwinrt" "-IC:\Program Files (x86)\Windows Kits\NETFXSDK\4.8\include\um" -c c:\Users\me\Documents\spann3r\croco\models\curope\kernels.cu -o c:\Users\me\Documents\spann3r\croco\models\curope\build\temp.win-amd64-cpython-39\Release\kernels.obj -D__CUDA_NO_HALF_OPERATORS__ -D__CUDA_NO_HALF_CONVERSIONS__ -D__CUDA_NO_BFLOAT16_CONVERSIONS__ -D__CUDA_NO_HALF2_OPERATORS__ --expt-relaxed-constexpr -O3 --ptxas-options=-v --use_fast_math -gencode arch=compute_50,code=sm_50 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -gencode arch=compute_70,code=sm_70 -gencode arch=compute_75,code=sm_75 -gencode arch=compute_80,code=sm_80 -gencode arch=compute_86,code=sm_86 -gencode arch=compute_37,code=sm_37 -gencode arch=compute_90,code=sm_90 -gencode arch=compute_37,code=compute_37 -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=curope -D_GLIBCXX_USE_CXX11_ABI=0
+   FAILED: c:/Users/me/Documents/spann3r/croco/models/curope/build/temp.win-amd64-cpython-39/Release/kernels.obj
+   C:\Users\me\.conda\envs\spann3r\bin\nvcc --generate-dependencies-with-compile --dependency-output c:\Users\me\Documents\spann3r\croco\models\curope\build\temp.win-amd64-cpython-39\Release\kernels.obj.d -std=c++17 --use-local-env -Xcompiler /MD -Xcompiler /wd4819 -Xcompiler /wd4251 -Xcompiler /wd4244 -Xcompiler /wd4267 -Xcompiler /wd4275 -Xcompiler /wd4018 -Xcompiler /wd4190 -Xcompiler /wd4624 -Xcompiler /wd4067 -Xcompiler /wd4068 -Xcompiler /EHsc -Xcudafe --diag_suppress=base_class_has_different_dll_interface -Xcudafe --diag_suppress=field_without_dll_interface -Xcudafe --diag_suppress=dll_interface_conflict_none_assumed -Xcudafe --diag_suppress=dll_interface_conflict_dllexport_assumed -IC:\Users\me\.conda\envs\spann3r\lib\site-packages\torch\include -IC:\Users\me\.conda\envs\spann3r\lib\site-packages\torch\include\torch\csrc\api\include -IC:\Users\me\.conda\envs\spann3r\lib\site-packages\torch\include\TH -IC:\Users\me\.conda\envs\spann3r\lib\site-packages\torch\include\THC -IC:\Users\me\.conda\envs\spann3r\include -IC:\Users\me\.conda\envs\spann3r\include -IC:\Users\me\.conda\envs\spann3r\Include "-IC:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.36.32532\include" "-IC:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.36.32532\ATLMFC\include" "-IC:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\VS\include" "-IC:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt" "-IC:\Program Files (x86)\Windows Kits\10\\include\10.0.22000.0\\um" "-IC:\Program Files (x86)\Windows Kits\10\\include\10.0.22000.0\\shared" "-IC:\Program Files (x86)\Windows Kits\10\\include\10.0.22000.0\\winrt" "-IC:\Program Files (x86)\Windows Kits\10\\include\10.0.22000.0\\cppwinrt" "-IC:\Program Files (x86)\Windows Kits\NETFXSDK\4.8\include\um" -c c:\Users\me\Documents\spann3r\croco\models\curope\kernels.cu -o c:\Users\me\Documents\spann3r\croco\models\curope\build\temp.win-amd64-cpython-39\Release\kernels.obj -D__CUDA_NO_HALF_OPERATORS__ -D__CUDA_NO_HALF_CONVERSIONS__ -D__CUDA_NO_BFLOAT16_CONVERSIONS__ -D__CUDA_NO_HALF2_OPERATORS__ --expt-relaxed-constexpr -O3 --ptxas-options=-v --use_fast_math -gencode arch=compute_50,code=sm_50 -gencode arch=compute_60,code=sm_60 -gencode arch=compute_61,code=sm_61 -gencode arch=compute_70,code=sm_70 -gencode arch=compute_75,code=sm_75 -gencode arch=compute_80,code=sm_80 -gencode arch=compute_86,code=sm_86 -gencode arch=compute_37,code=sm_37 -gencode arch=compute_90,code=sm_90 -gencode arch=compute_37,code=compute_37 -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=curope -D_GLIBCXX_USE_CXX11_ABI=0
+   C:/Users/me/.conda/envs/spann3r/lib/site-packages/torch/include\c10/util/complex.h(8): fatal error C1083: Cannot open include file: 'thrust/complex.h': No such file or directory
+   nvcc warning : The 'compute_35', 'compute_37', 'sm_35', and 'sm_37' architectures are deprecated, and may be removed in a future release (Use -Wno-deprecated-gpu-targets to suppress warning).
+   kernels.cu
+   [2/2] cl /showIncludes /nologo /O2 /W3 /GL /DNDEBUG /MD /MD /wd4819 /wd4251 /wd4244 /wd4267 /wd4275 /wd4018 /wd4190 /wd4624 /wd4067 /wd4068 /EHsc -IC:\Users\me\.conda\envs\spann3r\lib\site-packages\torch\include -IC:\Users\me\.conda\envs\spann3r\lib\site-packages\torch\include\torch\csrc\api\include -IC:\Users\me\.conda\envs\spann3r\lib\site-packages\torch\include\TH -IC:\Users\me\.conda\envs\spann3r\lib\site-packages\torch\include\THC -IC:\Users\me\.conda\envs\spann3r\include -IC:\Users\me\.conda\envs\spann3r\include -IC:\Users\me\.conda\envs\spann3r\Include "-IC:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.36.32532\include" "-IC:\Program Files\Microsoft Visual Studio\2022\Community\VC\Tools\MSVC\14.36.32532\ATLMFC\include" "-IC:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\VS\include" "-IC:\Program Files (x86)\Windows Kits\10\include\10.0.22000.0\ucrt" "-IC:\Program Files (x86)\Windows Kits\10\\include\10.0.22000.0\\um" "-IC:\Program Files (x86)\Windows Kits\10\\include\10.0.22000.0\\shared" "-IC:\Program Files (x86)\Windows Kits\10\\include\10.0.22000.0\\winrt" "-IC:\Program Files (x86)\Windows Kits\10\\include\10.0.22000.0\\cppwinrt" "-IC:\Program Files (x86)\Windows Kits\NETFXSDK\4.8\include\um" -c c:\Users\me\Documents\spann3r\croco\models\curope\curope.cpp /Foc:\Users\me\Documents\spann3r\croco\models\curope\build\temp.win-amd64-cpython-39\Release\curope.obj -O3 -DTORCH_API_INCLUDE_EXTENSION_H -DTORCH_EXTENSION_NAME=curope -D_GLIBCXX_USE_CXX11_ABI=0 /std:c++17
+   cl : Command line warning D9002 : ignoring unknown option '-O3'
+   ninja: build stopped: subcommand failed.
+   Traceback (most recent call last):
+   File "C:\Users\me\.conda\envs\spann3r\lib\site-packages\torch\utils\cpp_extension.py", line 2109, in _run_ninja_build
+      subprocess.run(
+   File "C:\Users\me\.conda\envs\spann3r\lib\subprocess.py", line 541, in run
+      raise CalledProcessError(retcode, process.args,
+   subprocess.CalledProcessError: Command '['ninja', '-v']' returned non-zero exit status 1.
+
+   The above exception was the direct cause of the following exception:
+
+   Traceback (most recent call last):
+   File "c:\Users\me\Documents\spann3r\croco\models\curope\setup.py", line 25, in <module>
+      setup(
+   File "C:\Users\me\.conda\envs\spann3r\lib\site-packages\setuptools\__init__.py", line 117, in setup
+      return distutils.core.setup(**attrs)
+   File "C:\Users\me\.conda\envs\spann3r\lib\site-packages\setuptools\_distutils\core.py", line 184, in setup
+      return run_commands(dist)
+   File "C:\Users\me\.conda\envs\spann3r\lib\site-packages\setuptools\_distutils\core.py", line 200, in run_commands
+      dist.run_commands()
+   File "C:\Users\me\.conda\envs\spann3r\lib\site-packages\setuptools\_distutils\dist.py", line 954, in run_commands
+      self.run_command(cmd)
+   File "C:\Users\me\.conda\envs\spann3r\lib\site-packages\setuptools\dist.py", line 950, in run_command
+      super().run_command(command)
+   File "C:\Users\me\.conda\envs\spann3r\lib\site-packages\setuptools\_distutils\dist.py", line 973, in run_command
+      cmd_obj.run()
+   File "C:\Users\me\.conda\envs\spann3r\lib\site-packages\setuptools\command\build_ext.py", line 98, in run
+      _build_ext.run(self)
+   File "C:\Users\me\.conda\envs\spann3r\lib\site-packages\setuptools\_distutils\command\build_ext.py", line 359, in run
+      self.build_extensions()
+   File "C:\Users\me\.conda\envs\spann3r\lib\site-packages\torch\utils\cpp_extension.py", line 870, in build_extensions
+      build_ext.build_extensions(self)
+   File "C:\Users\me\.conda\envs\spann3r\lib\site-packages\setuptools\_distutils\command\build_ext.py", line 476, in build_extensions
+      self._build_extensions_serial()
+   File "C:\Users\me\.conda\envs\spann3r\lib\site-packages\setuptools\_distutils\command\build_ext.py", line 502, in _build_extensions_serial
+      self.build_extension(ext)
+   File "C:\Users\me\.conda\envs\spann3r\lib\site-packages\setuptools\command\build_ext.py", line 263, in build_extension
+   File "C:\Users\me\.conda\envs\spann3r\lib\site-packages\setuptools\command\build_ext.py", line 263, in build_extension
+   File "C:\Users\me\.conda\envs\spann3r\lib\site-packages\setuptools\command\build_ext.py", line 263, in build_extension
+      _build_ext.build_extension(self, ext)
+   File "C:\Users\me\.conda\envs\spann3r\lib\site-packages\setuptools\command\build_ext.py", line 263, in build_extension
+      _build_ext.build_extension(self, ext)
+   File "C:\Users\me\.conda\envs\spann3r\lib\site-packages\setuptools\command\build_ext.py", line 263, in build_extension
+   File "C:\Users\me\.conda\envs\spann3r\lib\site-packages\setuptools\command\build_ext.py", line 263, in build_extension
+   File "C:\Users\me\.conda\envs\spann3r\lib\site-packages\setuptools\command\build_ext.py", line 263, in build_extension
+   File "C:\Users\me\.conda\envs\spann3r\lib\site-packages\setuptools\command\build_ext.py", line 263, in build_extension
+   File "C:\Users\me\.conda\envs\spann3r\lib\site-packages\setuptools\command\build_ext.py", line 263, in build_extension
+   File "C:\Users\me\.conda\envs\spann3r\lib\site-packages\setuptools\command\build_ext.py", line 263, in build_extension
+   File "C:\Users\me\.conda\envs\spann3r\lib\site-packages\setuptools\command\build_ext.py", line 263, in build_extension
+   File "C:\Users\me\.conda\envs\spann3r\lib\site-packages\setuptools\command\build_ext.py", line 263, in build_extension
+      _build_ext.build_extension(self, ext)
+   File "C:\Users\me\.conda\envs\spann3r\lib\site-packages\setuptools\_distutils\command\build_ext.py", line 557, in build_extension
+   File "C:\Users\me\.conda\envs\spann3r\lib\site-packages\setuptools\command\build_ext.py", line 263, in build_extension
+      _build_ext.build_extension(self, ext)
+   File "C:\Users\me\.conda\envs\spann3r\lib\site-packages\setuptools\_distutils\command\build_ext.py", line 557, in build_extension
+      objects = self.compiler.compile(
+      _run_ninja_build(
+   File "C:\Users\me\.conda\envs\spann3r\lib\site-packages\torch\utils\cpp_extension.py", line 2125, in _run_ninja_build
+      raise RuntimeError(message) from e
+   RuntimeError: Error compiling objects for extension
+   ```
+
+   Continuing the installation instructions:
+
+   ```
    cd ../../../
    ```
 
